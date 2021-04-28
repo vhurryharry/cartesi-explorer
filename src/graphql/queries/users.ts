@@ -1,7 +1,7 @@
 import gql from 'graphql-tag';
 
 export const USERS = gql`
-    query users(
+    subscription users(
         $first: Int
         $skip: Int
         $where: User_filter

@@ -10,7 +10,7 @@
 // PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 import _ from 'lodash';
-import { useQuery } from '@apollo/client';
+import { useSubscription } from '@apollo/client';
 import { BLOCKS } from '../queries/blocks';
 import { BlocksData, BlocksVars } from '../models';
 
@@ -20,10 +20,8 @@ const useBlocks = () => {
         skip: 0,
     };
 
-    return useQuery<BlocksData, BlocksVars>(BLOCKS, {
+    return useSubscription<BlocksData, BlocksVars>(BLOCKS, {
         variables,
-        pollInterval: 30000,
-        notifyOnNetworkStatusChange: true,
     });
 };
 
@@ -34,10 +32,8 @@ export const useProducerBlocks = (producer: string) => {
     const variables = {
         where: { producer },
     };
-    return useQuery<BlocksData, BlocksVars>(BLOCKS, {
+    return useSubscription<BlocksData, BlocksVars>(BLOCKS, {
         variables,
-        pollInterval: 30000,
-        notifyOnNetworkStatusChange: true,
     });
 };
 
@@ -48,10 +44,8 @@ export const useNodeBlocks = (node: string) => {
     const variables = {
         where: { node },
     };
-    return useQuery<BlocksData, BlocksVars>(BLOCKS, {
+    return useSubscription<BlocksData, BlocksVars>(BLOCKS, {
         variables,
-        pollInterval: 30000,
-        notifyOnNetworkStatusChange: true,
     });
 };
 

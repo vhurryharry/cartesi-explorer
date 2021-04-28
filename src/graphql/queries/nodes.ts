@@ -1,7 +1,7 @@
 import gql from 'graphql-tag';
 
 export const NODES = gql`
-    query nodes(
+    subscriptions nodes(
         $first: Int
         $skip: Int
         $where: Node_filter

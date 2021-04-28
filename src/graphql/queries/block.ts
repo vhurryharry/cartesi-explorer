@@ -1,7 +1,7 @@
 import gql from 'graphql-tag';
 
 export const BLOCK = gql`
-    query block($id: String) {
+    subscription block($id: String) {
         block(id: $id) {
             id
 

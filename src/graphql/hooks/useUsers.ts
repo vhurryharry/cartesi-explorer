@@ -10,7 +10,7 @@
 // PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 import _ from 'lodash';
-import { useQuery } from '@apollo/client';
+import { useSubscription } from '@apollo/client';
 import { USERS } from '../queries/users';
 import { UsersData, UsersVars } from '../models';
 
@@ -22,7 +22,7 @@ const useUsers = (
     sort: string = 'timestamp'
 ) => {
     const filter = id ? { id: id.toLowerCase() } : {};
-    return useQuery<UsersData, UsersVars>(USERS, {
+    return useSubscription<UsersData, UsersVars>(USERS, {
         variables: {
             first: USERS_PER_PAGE,
             where: filter,
@@ -30,8 +30,6 @@ const useUsers = (
             orderBy: sort,
             orderDirection: 'desc',
         },
-        notifyOnNetworkStatusChange: true,
-        pollInterval: 600000, // Every 10 minutes
     });
 };
 
