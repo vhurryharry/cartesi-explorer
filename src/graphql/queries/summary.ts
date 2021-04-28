@@ -1,7 +1,7 @@
 import gql from 'graphql-tag';
 
 export const SUMMARY = gql`
-    query summary($id: ID) {
+    subscription summary($id: ID) {
         summary(id: $id) {
             id
             totalUsers

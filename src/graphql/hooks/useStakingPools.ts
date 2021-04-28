@@ -10,7 +10,7 @@
 // PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 import _ from 'lodash';
-import { useQuery } from '@apollo/client';
+import { useSubscription } from '@apollo/client';
 import { STAKINGPOOLS } from '../queries/stakingPools';
 import { StakingPoolsData, StakingPoolsVars } from '../models';
 
@@ -18,14 +18,12 @@ export const POOLS_PER_PAGE = 10;
 
 const useStakingPools = (pageNumber: number, id: string = undefined) => {
     const filter = id ? { id: id.toLowerCase() } : {};
-    return useQuery<StakingPoolsData, StakingPoolsVars>(STAKINGPOOLS, {
+    return useSubscription<StakingPoolsData, StakingPoolsVars>(STAKINGPOOLS, {
         variables: {
             first: POOLS_PER_PAGE,
             where: filter,
             skip: pageNumber * POOLS_PER_PAGE,
         },
-        notifyOnNetworkStatusChange: true,
-        pollInterval: 600000, // Every 10 minutes
     });
 };
 

@@ -12,7 +12,7 @@
 import gql from 'graphql-tag';
 
 export const META = gql`
-    query _meta {
+    subscription _meta {
         _meta {
             block {
                 hash

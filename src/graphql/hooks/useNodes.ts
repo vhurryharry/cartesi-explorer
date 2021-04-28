@@ -10,7 +10,7 @@
 // PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 import _ from 'lodash';
-import { useQuery } from '@apollo/client';
+import { useSubscription } from '@apollo/client';
 import { NODES } from '../queries/nodes';
 import { NodesData, NodesVars } from '../models';
 import { constants } from 'ethers';
@@ -23,7 +23,7 @@ const useNodes = (
     sort: string = 'timestamp'
 ) => {
     const filter = id ? { id: id.toLowerCase() } : {};
-    return useQuery<NodesData, NodesVars>(NODES, {
+    return useSubscription<NodesData, NodesVars>(NODES, {
         variables: {
             first: NODES_PER_PAGE,
             where: filter,
@@ -31,8 +31,6 @@ const useNodes = (
             orderBy: sort,
             orderDirection: 'desc',
         },
-        notifyOnNetworkStatusChange: true,
-        pollInterval: 600000, // Every 10 minutes
     });
 };
 
@@ -42,8 +40,8 @@ export const useUserNodes = (owner: string) => {
 
     // convert to lowercase because backend is all lowercase
     owner = owner.toLowerCase();
-    
-    return useQuery<NodesData, NodesVars>(NODES, {
+
+    return useSubscription<NodesData, NodesVars>(NODES, {
         variables: {
             first: NODES_PER_PAGE,
             where: { owner },

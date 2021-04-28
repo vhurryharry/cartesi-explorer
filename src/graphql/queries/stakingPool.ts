@@ -1,7 +1,7 @@
 import gql from 'graphql-tag';
 
 export const STAKINGPOOL = gql`
-    query stakingPool($id: String) {
+    subscription stakingPool($id: String) {
         stakingPool(id: $id) {
             id
             commission

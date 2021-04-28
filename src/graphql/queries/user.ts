@@ -1,7 +1,7 @@
 import gql from 'graphql-tag';
 
 export const USER = gql`
-    query user($id: String) {
+    subscription user($id: String) {
         user(id: $id) {
             id
             stakedBalance

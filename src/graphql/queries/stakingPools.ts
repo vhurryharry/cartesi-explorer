@@ -1,7 +1,7 @@
 import gql from 'graphql-tag';
 
 export const STAKINGPOOLS = gql`
-    query stakingPools(
+    subscription stakingPools(
         $first: Int
         $skip: Int
         $where: StakingPool_filter
