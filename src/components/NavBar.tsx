@@ -10,15 +10,12 @@
 // PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 import React from 'react';
-import { useRouter } from 'next/router';
 import Link from 'next/link';
 import SelectedChain from './SelectedChain';
 
 export interface NavBarProps {}
 
-const NavBar = (props: NavBarProps) => {
-    const router = useRouter();
-
+const NavBar = () => {
     const items = [
         {
             key: 'home',
@@ -46,11 +43,6 @@ const NavBar = (props: NavBarProps) => {
             href: '/calculator',
         },
     ];
-
-    // use router to figure out the active item
-    const selectedKeys = items
-        .filter((item) => router.route.startsWith(item.href))
-        .map((item) => item.key);
 
     return (
         <nav className="navbar fixed-top navbar-expand-lg">

@@ -10,10 +10,8 @@
 // PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 import React, { useEffect, useState } from 'react';
-import { formatEther, parseEther } from '@ethersproject/units';
-import { Web3Provider } from '@ethersproject/providers';
+import { formatEther, parseEther, ZeroAddress } from 'ethers';
 import { useWeb3React } from '@web3-react/core';
-import { BigNumber, constants } from 'ethers';
 import { tinyString } from '../utils/stringUtils';
 import { useUserNodes } from '../graphql/hooks/useNodes';
 import { useNode } from '../services/node';
@@ -26,10 +24,10 @@ interface NodeProps {
 }
 
 const PoolNode = ({ poolAddress, setWaiting, setError }: NodeProps) => {
-    const { chainId } = useWeb3React<Web3Provider>();
+    const { chainId } = useWeb3React();
     const [showDetails, setShowDetails] = useState<boolean>(false);
-    const [deposit, setDeposit] = useState<BigNumber>(parseEther('0.1'));
-    const [transfer, setTransfer] = useState<BigNumber>(constants.Zero);
+    const [deposit, setDeposit] = useState<bigint>(parseEther('0.1'));
+    const [transfer, setTransfer] = useState<bigint>(0n);
 
     // get nodes hired by user from backend (if any)
     const userNodes = useUserNodes(poolAddress);
@@ -40,7 +38,7 @@ const PoolNode = ({ poolAddress, setWaiting, setError }: NodeProps) => {
 
     // use a state variable for the typed node address
     const [address, setAddress] = useState<string>(
-        userNodes?.data?.nodes?.length > 0 ? userNodes.data.nodes[0].id : ''
+        userNodes?.data?.nodes?.length > 0 ? userNodes.data.nodes[0].id : '',
     );
 
     // priority is the typed address (at state variable)
@@ -100,8 +98,8 @@ const PoolNode = ({ poolAddress, setWaiting, setError }: NodeProps) => {
                         {activeAddress
                             ? tinyString(activeAddress)
                             : pool
-                            ? 'Click to enter your node address'
-                            : 'Connect to wallet first'}
+                              ? 'Click to enter your node address'
+                              : 'Connect to wallet first'}
                     </span>
                     {notMine && (
                         <span className="col-12 col-sm-auto mx-2 staking-hire-content-error">
@@ -155,7 +153,7 @@ const PoolNode = ({ poolAddress, setWaiting, setError }: NodeProps) => {
                                         defaultValue={formatEther(deposit)}
                                         onBlur={(e) => {
                                             const value = parseEther(
-                                                e.target.value
+                                                e.target.value,
                                             );
                                             setDeposit(value);
                                             e.target.value = formatEther(value);
@@ -168,18 +166,14 @@ const PoolNode = ({ poolAddress, setWaiting, setError }: NodeProps) => {
                             </div>
                         )}
 
-                        {node.address &&
-                            debug &&
-                            node.user != constants.AddressZero && (
-                                <div className="form-group">
-                                    <label className="body-text-2 text-secondary">
-                                        Owner
-                                    </label>
-                                    <div className="sub-title-1">
-                                        {node.user}
-                                    </div>
-                                </div>
-                            )}
+                        {node.address && debug && node.user != ZeroAddress && (
+                            <div className="form-group">
+                                <label className="body-text-2 text-secondary">
+                                    Owner
+                                </label>
+                                <div className="sub-title-1">{node.user}</div>
+                            </div>
+                        )}
 
                         {node.address && debug && (
                             <div className="form-group">
@@ -204,7 +198,7 @@ const PoolNode = ({ poolAddress, setWaiting, setError }: NodeProps) => {
                                         defaultValue={formatEther(transfer)}
                                         onBlur={(e) => {
                                             const value = parseEther(
-                                                e.target.value
+                                                e.target.value,
                                             );
                                             setTransfer(value);
                                             e.target.value = formatEther(value);

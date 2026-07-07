@@ -10,10 +10,9 @@
 // PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 import React from 'react';
-import { Web3Provider } from '@ethersproject/providers';
 import { useWeb3React } from '@web3-react/core';
 
-import ReactTooltip from 'react-tooltip';
+import { Tooltip } from 'react-tooltip';
 
 import { etherscanLinks } from '../utils/networks';
 import useWindowDimensions from '../utils/windowDimentions';
@@ -35,13 +34,13 @@ const Address = ({
     className,
     rawLink = false,
 }: AddressProps) => {
-    const { chainId } = useWeb3React<Web3Provider>();
+    const { chainId } = useWeb3React();
 
     // resolve ENS entry from address
     const ensEntry = ens && useENS(id);
 
     const copyToClipboard = () => {
-        var dummy = document.createElement('textarea');
+        const dummy = document.createElement('textarea');
         document.body.appendChild(dummy);
         dummy.value = id;
         dummy.select();
@@ -100,20 +99,22 @@ const Address = ({
                             className="address-link ml-3"
                             target="_blank"
                             rel="noopener noreferrer"
-                            data-tip="View on Etherscan"
+                            data-tooltip-id="address-tooltip"
+                            data-tooltip-content="View on Etherscan"
                         >
                             <i className="fas fa-external-link-alt"></i>
                         </a>
                         <span
                             className="address-link ml-1"
                             onClick={copyToClipboard}
-                            data-tip="Copy to Clipboard"
+                            data-tooltip-id="address-tooltip"
+                            data-tooltip-content="Copy to Clipboard"
                         >
                             <i className="far fa-copy"></i>
                         </span>
                     </span>
                 </span>
-                <ReactTooltip />
+                <Tooltip id="address-tooltip" />
             </>
         );
     }

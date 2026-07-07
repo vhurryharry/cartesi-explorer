@@ -12,7 +12,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useWeb3React } from '@web3-react/core';
-import { Web3Provider } from '@ethersproject/providers';
 
 import useUsers, { USERS_PER_PAGE } from '../graphql/hooks/useUsers';
 import { Summary } from '../graphql/models';
@@ -26,7 +25,7 @@ interface UsersProps {
 type Sort = 'stakedBalance' | 'totalReward' | 'totalBlocks';
 
 const Users = (props: UsersProps) => {
-    const { account } = useWeb3React<Web3Provider>();
+    const { account } = useWeb3React();
 
     const [id, setId] = useState<string>(undefined);
     const [sort, setSort] = useState<Sort>('stakedBalance');
