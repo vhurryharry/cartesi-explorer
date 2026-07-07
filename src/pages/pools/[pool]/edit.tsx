@@ -112,10 +112,10 @@ const ManagePool = () => {
                         {!stakingPool?.fee
                             ? ''
                             : stakingPool.fee.commission
-                            ? `${
-                                  stakingPool?.fee?.commission / 100
-                              }% Flat Rate Commission`
-                            : `${stakingPool?.fee?.gas} Gas Tax Commission`}
+                              ? `${
+                                    stakingPool?.fee?.commission / 100
+                                }% Flat Rate Commission`
+                              : `${stakingPool?.fee?.gas} Gas Tax Commission`}
                     </span>
                 </div>
 

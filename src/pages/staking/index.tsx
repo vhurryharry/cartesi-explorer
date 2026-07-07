@@ -13,9 +13,8 @@ import React, { useEffect, useState } from 'react';
 import Head from 'next/head';
 
 import { useWeb3React } from '@web3-react/core';
-import { Web3Provider } from '@ethersproject/providers';
-import { BigNumber, constants } from 'ethers';
-import ReactTooltip from 'react-tooltip';
+import { MaxUint256 } from 'ethers';
+import { Tooltip } from 'react-tooltip';
 
 import Layout from '../../components/Layout';
 import Node from '../../components/Node';
@@ -33,7 +32,7 @@ import StakingDisclaimer from '../../components/StakingDisclaimer';
 import { formatCTSI, isInfinite } from '../../utils/token';
 
 const Staking = () => {
-    const { account } = useWeb3React<Web3Provider>();
+    const { account } = useWeb3React();
 
     const blockNumber = useBlockNumber();
     const {
@@ -61,7 +60,7 @@ const Staking = () => {
         parseCTSI,
         toBigCTSI,
         toCTSI,
-    } = useCartesiToken(account, staking?.address, blockNumber);
+    } = useCartesiToken(account, staking?.target as string, blockNumber);
 
     const user = useUser(account);
 
@@ -83,19 +82,19 @@ const Staking = () => {
     const error = tokenError || stakingError || nodeError;
 
     const updateTimers = () => {
-        if (maturingBalance.gt(0)) {
+        if (maturingBalance > 0n) {
             setMaturingCountdown(
                 maturingTimestamp > new Date()
                     ? maturingTimestamp.getTime() - new Date().getTime()
-                    : 0
+                    : 0,
             );
         }
 
-        if (releasingBalance.gt(0)) {
+        if (releasingBalance > 0n) {
             setReleasingCountdown(
                 releasingTimestamp > new Date()
                     ? releasingTimestamp.getTime() - new Date().getTime()
-                    : 0
+                    : 0,
             );
         }
     };
@@ -131,9 +130,9 @@ const Staking = () => {
     const doApprove = () => {
         if (stakeAmount > 0) {
             if (infiniteApproval) {
-                approve(staking.address, constants.MaxUint256);
+                approve(staking.target as string, MaxUint256);
             } else if (stakeAmount != toCTSI(allowance)) {
-                approve(staking.address, parseCTSI(stakeAmount));
+                approve(staking.target as string, parseCTSI(stakeAmount));
             }
         }
     };
@@ -164,22 +163,22 @@ const Staking = () => {
     };
 
     const splitStakeAmount = () => {
-        let fromReleasing = BigNumber.from(0),
-            fromAllowance = BigNumber.from(0);
-        let stakeAmountCTSI = parseCTSI(stakeAmount);
+        let fromReleasing = 0n,
+            fromAllowance = 0n;
+        const stakeAmountCTSI = parseCTSI(stakeAmount);
 
-        if (releasingBalance.add(allowance).lt(stakeAmountCTSI)) {
+        if (releasingBalance + allowance < stakeAmountCTSI) {
             return null;
         }
 
-        if (releasingBalance.eq(0)) {
+        if (releasingBalance === 0n) {
             fromAllowance = stakeAmountCTSI;
         } else {
-            if (releasingBalance.gt(stakeAmountCTSI)) {
+            if (releasingBalance > stakeAmountCTSI) {
                 fromReleasing = stakeAmountCTSI;
             } else {
                 fromReleasing = releasingBalance;
-                fromAllowance = stakeAmountCTSI.sub(releasingBalance);
+                fromAllowance = stakeAmountCTSI - releasingBalance;
             }
         }
 
@@ -190,22 +189,22 @@ const Staking = () => {
     };
 
     const splitUnstakeAmount = () => {
-        let fromMaturing = BigNumber.from(0),
-            fromStaked = BigNumber.from(0);
-        let unstakeAmountCTSI = parseCTSI(unstakeAmount);
+        let fromMaturing = 0n,
+            fromStaked = 0n;
+        const unstakeAmountCTSI = parseCTSI(unstakeAmount);
 
-        if (maturingBalance.add(stakedBalance).lt(unstakeAmountCTSI)) {
+        if (maturingBalance + stakedBalance < unstakeAmountCTSI) {
             return null;
         }
 
-        if (maturingBalance.eq(0)) {
+        if (maturingBalance === 0n) {
             fromStaked = unstakeAmountCTSI;
         } else {
-            if (maturingBalance.gt(unstakeAmountCTSI)) {
+            if (maturingBalance > unstakeAmountCTSI) {
                 fromMaturing = unstakeAmountCTSI;
             } else {
                 fromMaturing = maturingBalance;
-                fromStaked = unstakeAmountCTSI.sub(maturingBalance);
+                fromStaked = unstakeAmountCTSI - maturingBalance;
             }
         }
 
@@ -217,11 +216,9 @@ const Staking = () => {
 
     const stakeSplit = splitStakeAmount();
     const unstakeSplit = splitUnstakeAmount();
-    const totalBalance = stakedBalance
-        .add(maturingBalance)
-        .add(releasingBalance);
+    const totalBalance = stakedBalance + maturingBalance + releasingBalance;
     const totalStaked =
-        summary && summary.totalStaked ? toBigCTSI(summary.totalStaked) : 0;
+        summary && summary.totalStaked ? toBigCTSI(summary.totalStaked) : 0n;
 
     return (
         <Layout className="staking">
@@ -281,13 +278,12 @@ const Staking = () => {
                 <div className="staking-total-balances-item">
                     <label className="body-text-1">Total Rewards</label>
                     <img
-                        data-tip={labels.totalRewards}
+                        data-tooltip-id="staking-tooltip"
+                        data-tooltip-content={labels.totalRewards}
                         src="/images/question.png"
                     />
                     <span className="info-text-md">
-                        {user
-                            ? formatCTSI(BigNumber.from(user.totalReward), 2)
-                            : 0}{' '}
+                        {user ? formatCTSI(user.totalReward, 2) : 0}{' '}
                         <span className="small-text">CTSI</span>
                     </span>
                 </div>
@@ -295,7 +291,8 @@ const Staking = () => {
                 <div className="staking-total-balances-item">
                     <label className="body-text-1">In-contract Balance</label>
                     <img
-                        data-tip={labels.inContractBalance}
+                        data-tooltip-id="staking-tooltip"
+                        data-tooltip-content={labels.inContractBalance}
                         src="/images/question.png"
                     />
                     <span className="info-text-md">
@@ -316,7 +313,7 @@ const Staking = () => {
                                         Maturing
                                     </span>
                                 </div>
-                                {maturingBalance.gt(0) &&
+                                {maturingBalance > 0n &&
                                     maturingCountdown > 0 && (
                                         <div className="staking-balances-item-timer">
                                             <span className="small-text">
@@ -355,23 +352,23 @@ const Staking = () => {
                                 <div className="mb-1">
                                     <img src="/images/releasing.png" />
                                     <span className="body-text-1 ml-3">
-                                        {releasingBalance.gt(0) &&
+                                        {releasingBalance > 0n &&
                                         releasingCountdown === 0
                                             ? 'Released'
                                             : 'Releasing'}
                                     </span>
                                 </div>
-                                {releasingBalance.gt(0) &&
+                                {releasingBalance > 0n &&
                                     releasingCountdown > 0 && (
                                         <div className="staking-balances-item-timer">
                                             <span className="small-text">
                                                 {displayTime(
-                                                    releasingCountdown
+                                                    releasingCountdown,
                                                 )}
                                             </span>
                                         </div>
                                     )}
-                                {releasingBalance.gt(0) &&
+                                {releasingBalance > 0n &&
                                     releasingCountdown === 0 && (
                                         <button
                                             type="button"
@@ -437,7 +434,7 @@ const Staking = () => {
                                             disabled={!account || waiting}
                                             onChange={(e) =>
                                                 setStakeAmount(
-                                                    parseFloat(e.target.value)
+                                                    parseFloat(e.target.value),
                                                 )
                                             }
                                         />
@@ -456,11 +453,11 @@ const Staking = () => {
                                 <div className="mt-2 mb-4 mx-2 px-2 border-left border-dark body-text-1">
                                     {stakeSplit ? (
                                         <>
-                                            {stakeSplit.releasing.gt(0) && (
+                                            {stakeSplit.releasing > 0n && (
                                                 <div className="d-flex flex-row align-items-center justify-content-between">
                                                     <span>
                                                         {formatCTSI(
-                                                            stakeSplit.releasing
+                                                            stakeSplit.releasing,
                                                         )}{' '}
                                                         <span className="small-text">
                                                             CTSI
@@ -471,11 +468,11 @@ const Staking = () => {
                                                     </span>
                                                 </div>
                                             )}
-                                            {stakeSplit.wallet.gt(0) && (
+                                            {stakeSplit.wallet > 0n && (
                                                 <div className="d-flex flex-row align-items-center justify-content-between">
                                                     <span>
                                                         {formatCTSI(
-                                                            stakeSplit.wallet
+                                                            stakeSplit.wallet,
                                                         )}{' '}
                                                         <span className="small-text">
                                                             CTSI
@@ -537,7 +534,7 @@ const Staking = () => {
                                                 {totalStaked
                                                     ? (
                                                           (stakeAmount * 100) /
-                                                          totalStaked.toNumber()
+                                                          Number(totalStaked)
                                                       ).toFixed(2)
                                                     : 0}
                                                 % chance of producing the
@@ -561,7 +558,7 @@ const Staking = () => {
                                             checked={infiniteApproval}
                                             onChange={(e) =>
                                                 setInfiniteApproval(
-                                                    e.target.checked
+                                                    e.target.checked,
                                                 )
                                             }
                                         />
@@ -588,7 +585,7 @@ const Staking = () => {
                                             disabled={!account || waiting}
                                             onChange={(e) =>
                                                 setUnstakeAmount(
-                                                    parseFloat(e.target.value)
+                                                    parseFloat(e.target.value),
                                                 )
                                             }
                                         />
@@ -605,11 +602,11 @@ const Staking = () => {
                                 <div className="mt-2 mb-4 mx-2 px-2 border-left border-dark body-text-1">
                                     {unstakeSplit ? (
                                         <>
-                                            {unstakeSplit.maturing.gt(0) && (
+                                            {unstakeSplit.maturing > 0n && (
                                                 <div className="d-flex flex-row align-items-center justify-content-between">
                                                     <span>
                                                         {formatCTSI(
-                                                            unstakeSplit.maturing
+                                                            unstakeSplit.maturing,
                                                         )}{' '}
                                                         <span className="small-text">
                                                             CTSI
@@ -618,11 +615,11 @@ const Staking = () => {
                                                     <span>From "maturing"</span>
                                                 </div>
                                             )}
-                                            {unstakeSplit.staked.gt(0) && (
+                                            {unstakeSplit.staked > 0n && (
                                                 <div className="d-flex flex-row align-items-center justify-content-between">
                                                     <span>
                                                         {formatCTSI(
-                                                            unstakeSplit.staked
+                                                            unstakeSplit.staked,
                                                         )}{' '}
                                                         <span className="small-text">
                                                             CTSI
@@ -656,7 +653,7 @@ const Staking = () => {
                     </div>
                 </div>
             </div>
-            <ReactTooltip />
+            <Tooltip id="staking-tooltip" />
         </Layout>
     );
 };

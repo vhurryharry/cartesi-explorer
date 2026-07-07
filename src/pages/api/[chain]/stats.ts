@@ -12,7 +12,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import Cors from 'cors';
 import axios from 'axios';
-import { constants, FixedNumber } from 'ethers';
+import { FixedNumber } from 'ethers';
 
 import runMiddleware from '../../../utils/runMiddleware';
 import { getEstimatedRewardRate, getRewardRate } from '../../../utils/reward';
@@ -40,8 +40,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const chainId =
         parseInt(
             Object.keys(networks).find(
-                (key) => networks[key] == (chain as string).toLowerCase()
-            )
+                (key) => networks[key] == (chain as string).toLowerCase(),
+            ),
         ) || 1;
 
     const client = createApollo(chainId);
@@ -64,7 +64,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const endpoint = `https://api.coingecko.com/api/v3/coins/cartesi?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`;
     const marketData = await axios.get(endpoint);
     const circulatingSupply = Math.round(
-        marketData.data.market_data.circulating_supply
+        marketData.data.market_data.circulating_supply,
     );
 
     let projectedAnnualEarnings = 0,
@@ -73,16 +73,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         const { yearReturn } = getRewardRate(blocks, circulatingSupply);
 
         participationRate = toCTSI(summary.totalStaked)
-            .divUnsafe(FixedNumber.from(circulatingSupply))
-            .mulUnsafe(FixedNumber.from(100))
+            .divUnsafe(FixedNumber.fromValue(circulatingSupply))
+            .mulUnsafe(FixedNumber.fromValue(100))
             .toUnsafeFloat();
 
         projectedAnnualEarnings = yearReturn
-            .mulUnsafe(FixedNumber.from(100))
+            .mulUnsafe(FixedNumber.fromValue(100))
             .toUnsafeFloat();
     }
 
-    const { activeStake } = getEstimatedRewardRate(blocks, constants.One, 0, 0);
+    const { activeStake } = getEstimatedRewardRate(blocks, 1n, 0, 0);
 
     res.json({
         price: +marketData.data.market_data.current_price.usd.toFixed(4),
