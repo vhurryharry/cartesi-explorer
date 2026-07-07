@@ -36,10 +36,10 @@ export async function getAllChains(): Promise<IChainData[]> {
 export async function getChain(chainId: number): Promise<IChainData> {
     try {
         const response = await axios.get(
-            `https://raw.githubusercontent.com/ethereum-lists/chains/master/_data/chains/eip155-${chainId}.json`
+            `https://raw.githubusercontent.com/ethereum-lists/chains/master/_data/chains/eip155-${chainId}.json`,
         );
         return response.data;
-    } catch (e) {
+    } catch {
         return {
             name: 'Private',
             chain: 'Private',
@@ -62,7 +62,7 @@ export async function getChainByChainId(chainId: number): Promise<IChainData> {
 
 export async function getChainByKeyValue(
     key: string,
-    value: any
+    value: any,
 ): Promise<IChainData> {
     const allChains = await getAllChains();
 
@@ -82,21 +82,21 @@ export async function getChainByKeyValue(
 }
 
 export async function getChainByNetworkId(
-    networkId: number
+    networkId: number,
 ): Promise<IChainData> {
     const chainData = await getChainByKeyValue('networkId', networkId);
     return chainData;
 }
 
 export async function convertNetworkIdToChainId(
-    networkId: number
+    networkId: number,
 ): Promise<number> {
     const chainData = await getChainByNetworkId(networkId);
     return chainData.chainId;
 }
 
 export async function convertChainIdToNetworkId(
-    chainId: number
+    chainId: number,
 ): Promise<number> {
     const chainData = await getChain(chainId);
     return chainData.networkId;

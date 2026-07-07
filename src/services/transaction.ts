@@ -1,17 +1,16 @@
-import { ContractTransaction } from 'ethers';
+import { TransactionResponse } from 'ethers';
 import { useEffect, useState } from 'react';
-import { Web3Provider } from '@ethersproject/providers';
 import { useWeb3React } from '@web3-react/core';
 
 import { confirmations } from '../utils/networks';
 
 export const useTransaction = () => {
-    const { chainId } = useWeb3React<Web3Provider>();
+    const { chainId } = useWeb3React();
 
     const [waiting, setWaiting] = useState<boolean>(false);
     const [error, setError] = useState<string>();
     const [transaction, setTransaction] =
-        useState<Promise<ContractTransaction>>();
+        useState<Promise<TransactionResponse>>();
 
     useEffect(() => {
         if (transaction) {

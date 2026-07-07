@@ -11,8 +11,7 @@
 
 import { useState, useEffect } from 'react';
 import { useWeb3React } from '@web3-react/core';
-import { Web3Provider } from '@ethersproject/providers';
-import { BigNumber, BigNumberish, constants, FixedNumber } from 'ethers';
+import { BigNumberish, FixedNumber } from 'ethers';
 import { useBlockNumber } from './eth';
 import {
     useStakingPoolContract,
@@ -28,24 +27,18 @@ export interface StakingPoolCommission {
 }
 
 export const useStakingPool = (address: string) => {
-    const { account } = useWeb3React<Web3Provider>();
+    const { account } = useWeb3React();
     const stakingPool = useStakingPoolContract(address);
 
     const blockNumber = useBlockNumber();
     const { waiting, error, setError, setTransaction } = useTransaction();
 
-    const [stakedBalance, setStakedBalance] = useState<BigNumber>(
-        constants.Zero
-    );
+    const [stakedBalance, setStakedBalance] = useState<bigint>(0n);
     const [maturingTimestamp, setMaturingTimestamp] = useState<Date>(null);
     const [releasingTimestamp, setReleasingTimestamp] = useState<Date>(null);
-    const [maturingBalance, setMaturingBalance] = useState<BigNumber>(
-        constants.Zero
-    );
-    const [releasingBalance, setReleasingBalance] = useState<BigNumber>(
-        constants.Zero
-    );
-    const [paused, setPaused] = useState<Boolean>(false);
+    const [maturingBalance, setMaturingBalance] = useState<bigint>(0n);
+    const [releasingBalance, setReleasingBalance] = useState<bigint>(0n);
+    const [paused, setPaused] = useState<boolean>(false);
 
     useEffect(() => {
         if (stakingPool && account) {
@@ -53,12 +46,12 @@ export const useStakingPool = (address: string) => {
             stakingPool
                 .getMaturingTimestamp(account)
                 .then((value) =>
-                    setMaturingTimestamp(new Date(value.toNumber() * 1000))
+                    setMaturingTimestamp(new Date(Number(value) * 1000)),
                 );
             stakingPool
                 .getReleasingTimestamp(account)
                 .then((value) =>
-                    setReleasingTimestamp(new Date(value.toNumber() * 1000))
+                    setReleasingTimestamp(new Date(Number(value) * 1000)),
                 );
             stakingPool.getMaturingBalance(account).then(setMaturingBalance);
             stakingPool.getReleasingBalance(account).then(setReleasingBalance);
@@ -129,7 +122,7 @@ export const useStakingPool = (address: string) => {
         }
     };
 
-    const hire = (worker: string, amount: BigNumber) => {
+    const hire = (worker: string, amount: bigint) => {
         if (stakingPool) {
             try {
                 setTransaction(stakingPool.hire(worker, { value: amount }));
@@ -183,7 +176,7 @@ export const useStakingPool = (address: string) => {
 
 export const useStakingPoolCommission = (
     address: string,
-    reward: BigNumberish
+    reward: BigNumberish,
 ) => {
     const fee = useFeeContract(address);
     const [commission, setCommission] = useState<StakingPoolCommission>({
@@ -198,8 +191,8 @@ export const useStakingPoolCommission = (
                 loading: true,
             });
             fee.getCommission(0, reward).then((value) => {
-                const percentage = FixedNumber.from(value)
-                    .divUnsafe(FixedNumber.from(reward))
+                const percentage = FixedNumber.fromValue(value)
+                    .divUnsafe(FixedNumber.fromValue(reward))
                     .toUnsafeFloat();
                 setCommission({
                     value: percentage,

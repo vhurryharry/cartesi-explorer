@@ -9,9 +9,7 @@
 // WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 // PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-import { BigNumber } from '@ethersproject/bignumber';
 import { useWeb3React } from '@web3-react/core';
-import { Web3Provider } from '@ethersproject/providers';
 import { useEffect, useState } from 'react';
 import { useStakingPoolFactoryContract } from './contracts';
 import { useBlockNumber } from './eth';
@@ -20,12 +18,12 @@ import { useTransaction } from './transaction';
 export const useStakingPoolFactory = () => {
     const poolFactory = useStakingPoolFactoryContract();
 
-    const { account } = useWeb3React<Web3Provider>();
+    const { account } = useWeb3React();
     const blockNumber = useBlockNumber();
 
     const { waiting, error, setError, setTransaction } = useTransaction();
     const [paused, setPaused] = useState<boolean>(false);
-    const [loading, setLoading] = useState<Boolean>(true);
+    const [loading, setLoading] = useState<boolean>(true);
 
     const createFlatRateCommission = (commission: number) => {
         if (poolFactory) {
@@ -33,8 +31,8 @@ export const useStakingPoolFactory = () => {
                 // send transaction
                 setTransaction(
                     poolFactory.createFlatRateCommission(commission, {
-                        value: BigNumber.from(10).pow(15),
-                    })
+                        value: 10n ** 15n,
+                    }),
                 );
             } catch (e) {
                 setError(e.message);
@@ -48,8 +46,8 @@ export const useStakingPoolFactory = () => {
                 // send transaction
                 setTransaction(
                     poolFactory.createGasTaxCommission(gas, {
-                        value: BigNumber.from(10).pow(15),
-                    })
+                        value: 10n ** 15n,
+                    }),
                 );
             } catch (e) {
                 setError(e.message);

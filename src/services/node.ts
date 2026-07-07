@@ -10,10 +10,10 @@
 // PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 import { useState, useEffect } from 'react';
-import { BigNumberish } from 'ethers';
-import { isAddress } from '@ethersproject/address';
+import { BigNumberish, isAddress } from 'ethers';
 import { useWeb3React } from '@web3-react/core';
 import { useBalance, useBlockNumber } from './eth';
+import { useEthersProvider } from './provider';
 import {
     usePoSContract,
     usePoS1Contract,
@@ -22,7 +22,8 @@ import {
 import { useTransaction } from './transaction';
 
 export const useNode = (address: string) => {
-    const { library, chainId } = useWeb3React();
+    const { chainId } = useWeb3React();
+    const provider = useEthersProvider();
     const workerManager = useWorkerManagerContract();
     const pos = usePoSContract();
     const pos1 = usePoS1Contract();
@@ -53,10 +54,13 @@ export const useNode = (address: string) => {
             const retired = await workerManager.isRetired(address);
             const authorized = await workerManager.isAuthorized(
                 address,
-                pos.address
+                await pos.getAddress(),
             );
             const authorized1 = pos1
-                ? await workerManager.isAuthorized(address, pos1.address)
+                ? await workerManager.isAuthorized(
+                      address,
+                      await pos1.getAddress(),
+                  )
                 : false;
             setUser(user);
             setAvailable(available);
@@ -65,7 +69,7 @@ export const useNode = (address: string) => {
             setRetired(retired);
             setAuthorized(authorized);
             setAuthorized1(authorized1);
-        } catch (e) {
+        } catch {
             setUser('');
             setAvailable(false);
             setPending(false);
@@ -85,23 +89,25 @@ export const useNode = (address: string) => {
         }
     }, [workerManager, address, block]);
 
-    const authorize = () => {
+    const authorize = async () => {
         if (workerManager) {
             try {
-                setTransaction(workerManager.authorize(address, pos.address));
+                const posAddress = await pos.getAddress();
+                setTransaction(workerManager.authorize(address, posAddress));
             } catch (e) {
                 setError(e.message);
             }
         }
     };
 
-    const hire = (value: BigNumberish) => {
+    const hire = async (value: BigNumberish) => {
         if (workerManager) {
             try {
+                const posAddress = await pos.getAddress();
                 setTransaction(
-                    workerManager.hireAndAuthorize(address, pos.address, {
+                    workerManager.hireAndAuthorize(address, posAddress, {
                         value,
-                    })
+                    }),
                 );
             } catch (e) {
                 setError(e.message);
@@ -129,10 +135,10 @@ export const useNode = (address: string) => {
         }
     };
 
-    const transfer = (value: BigNumberish) => {
-        if (library && chainId && address) {
+    const transfer = async (value: BigNumberish) => {
+        if (provider && chainId && address) {
             try {
-                const signer = library.getSigner();
+                const signer = await provider.getSigner();
                 setTransaction(signer.sendTransaction({ to: address, value }));
             } catch (e) {
                 setError(e.message);

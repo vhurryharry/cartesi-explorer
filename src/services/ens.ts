@@ -10,9 +10,8 @@
 // PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 import { useEffect, useState } from 'react';
-import { Web3Provider } from '@ethersproject/providers';
-import { useWeb3React } from '@web3-react/core';
-import { ethers } from 'ethers';
+import { getAddress } from 'ethers';
+import { useEthersProvider } from './provider';
 
 export interface ENSEntry {
     address: string;
@@ -28,23 +27,23 @@ export interface ENSEntry {
  * @returns ENSEntry with the address, and name if address can be resolved to a name
  */
 export const useENS = (address: string): ENSEntry => {
-    const { library } = useWeb3React<Web3Provider>();
+    const provider = useEthersProvider();
     const [entry, setEntry] = useState<ENSEntry>({ address, resolving: true });
     useEffect(() => {
         const resolve = async (address: string): Promise<ENSEntry> => {
             // convert address to checksum address
-            address = ethers.utils.getAddress(address);
+            address = getAddress(address);
 
             // do a reverse lookup
-            const name = await library.lookupAddress(address);
+            const name = await provider.lookupAddress(address);
 
             console.log(`reverse lookup of ${address} resolved to ${name}`);
             if (name) {
                 // name found, now do a forward lookup
-                const resolver = await library.getResolver(name);
+                const resolver = await provider.getResolver(name);
                 const ethAddress = await resolver.getAddress();
                 console.log(
-                    `forward lookup of ${name} resolved to ${ethAddress}`
+                    `forward lookup of ${name} resolved to ${ethAddress}`,
                 );
 
                 // we need to check if the forward resolution matches the reverse
@@ -63,9 +62,9 @@ export const useENS = (address: string): ENSEntry => {
             }
             return { address, resolving: false };
         };
-        if (library) {
+        if (provider) {
             resolve(address).then(setEntry);
         }
-    }, [address, library]);
+    }, [address, provider]);
     return entry;
 };
