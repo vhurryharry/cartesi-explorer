@@ -42,22 +42,41 @@ export const useStakingPool = (address: string) => {
 
     useEffect(() => {
         if (stakingPool && account) {
-            stakingPool.getStakedBalance(account).then(setStakedBalance);
-            stakingPool
-                .getMaturingTimestamp(account)
-                .then((value) =>
-                    setMaturingTimestamp(new Date(Number(value) * 1000)),
-                );
-            stakingPool
-                .getReleasingTimestamp(account)
-                .then((value) =>
-                    setReleasingTimestamp(new Date(Number(value) * 1000)),
-                );
-            stakingPool.getMaturingBalance(account).then(setMaturingBalance);
-            stakingPool.getReleasingBalance(account).then(setReleasingBalance);
             stakingPool.paused().then(setPaused);
+            Promise.all([
+                stakingPool.userBalance(account),
+                stakingPool.lockTime(),
+                stakingPool.getWithdrawBalance(),
+            ]).then(async ([userBalance, lockTime, withdrawBalance]) => {
+                const { balance, shares, depositTimestamp } = userBalance;
+                // staking-pool v2 is shares-based: the staked balance is the
+                // CTSI value of the user's shares.
+                setStakedBalance(await stakingPool.sharesToAmount(shares));
+                // the liquid (deposited but not-yet-staked) balance matures
+                // lockTime seconds after the last deposit.
+                setMaturingBalance(balance);
+                setMaturingTimestamp(
+                    new Date(
+                        (Number(depositTimestamp) + Number(lockTime)) * 1000,
+                    ),
+                );
+                // amount unstaked and available (or becoming available) to
+                // withdraw; v2 has no per-user releasing timestamp.
+                setReleasingBalance(withdrawBalance);
+                setReleasingTimestamp(null);
+            });
         }
     }, [stakingPool, account, blockNumber]);
+
+    const deposit = (amount: BigNumberish) => {
+        if (stakingPool) {
+            try {
+                setTransaction(stakingPool.deposit(amount));
+            } catch (e) {
+                setError(e.message);
+            }
+        }
+    };
 
     const stake = (amount: BigNumberish) => {
         if (stakingPool) {
@@ -70,11 +89,12 @@ export const useStakingPool = (address: string) => {
         }
     };
 
-    const unstake = (amount: BigNumberish) => {
+    const unstake = async (amount: BigNumberish) => {
         if (stakingPool) {
             try {
-                // send transaction
-                setTransaction(stakingPool.unstake(amount));
+                // v2 unstake operates on shares, convert from CTSI amount
+                const shares = await stakingPool.amountToShares(amount);
+                setTransaction(stakingPool.unstake(shares));
             } catch (e) {
                 setError(e.message);
             }
@@ -162,6 +182,7 @@ export const useStakingPool = (address: string) => {
         maturingBalance,
         releasingBalance,
         paused,
+        deposit,
         stake,
         unstake,
         withdraw,
