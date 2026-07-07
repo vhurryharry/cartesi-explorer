@@ -14,9 +14,8 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 
 import { useWeb3React } from '@web3-react/core';
-import { Web3Provider } from '@ethersproject/providers';
-import { BigNumber, constants, ethers, FixedNumber } from 'ethers';
-import ReactTooltip from 'react-tooltip';
+import { FixedNumber, MaxUint256, parseUnits } from 'ethers';
+import { Tooltip } from 'react-tooltip';
 
 import Layout from '../../components/Layout';
 import ConfirmationIndicator from '../../components/ConfirmationIndicator';
@@ -38,17 +37,17 @@ const PoolCommission = (props: { pool: StakingPool }) => {
     const { pool } = props;
 
     // commission simulation
-    const reward = ethers.utils.parseUnits('2900', 18);
-    const nextCommission = useStakingPoolCommission(pool.id, reward);
+    const reward = parseUnits('2900', 18);
+    useStakingPoolCommission(pool.id, reward);
 
     // calculate historical commission
-    const totalReward = FixedNumber.from(pool.user.totalReward);
-    const totalCommission = FixedNumber.from(pool.totalCommission);
+    const totalReward = FixedNumber.fromString(pool.user.totalReward);
+    const totalCommission = FixedNumber.fromString(pool.totalCommission);
     const accuredCommissionLabel = totalReward.isZero()
         ? ''
         : `${totalCommission
               .divUnsafe(totalReward)
-              .mulUnsafe(FixedNumber.from(100))
+              .mulUnsafe(FixedNumber.fromValue(100))
               .toUnsafeFloat()
               .toFixed(2)} %`;
 
@@ -59,11 +58,6 @@ const PoolCommission = (props: { pool: StakingPool }) => {
     } else if (pool.fee.gas) {
         commissionLabel = `${pool.fee.gas} Gas`;
     }
-
-    // calculate commission for next block, by calling the fee contract
-    const nextCommissionLabel = nextCommission.value
-        ? `(${(nextCommission.value * 100).toFixed(2)} %)`
-        : '';
 
     // commission help tooptip
     let commissionTooltip: string = undefined;
@@ -77,7 +71,11 @@ const PoolCommission = (props: { pool: StakingPool }) => {
         <div className="staking-total-balances-item">
             <label className="body-text-1">Commission</label>
             {commissionTooltip && (
-                <img data-tip={commissionTooltip} src="/images/question.png" />
+                <img
+                    data-tooltip-id="pool-tooltip"
+                    data-tooltip-content={commissionTooltip}
+                    src="/images/question.png"
+                />
             )}
             <span className="info-text-md">
                 {accuredCommissionLabel} ({commissionLabel}){' '}
@@ -90,7 +88,7 @@ const Pool = () => {
     const router = useRouter();
     const { pool } = router.query;
 
-    const { account } = useWeb3React<Web3Provider>();
+    const { account } = useWeb3React();
 
     const blockNumber = useBlockNumber();
     const {
@@ -116,7 +114,7 @@ const Pool = () => {
         approve,
         parseCTSI,
         toCTSI,
-    } = useCartesiToken(account, staking?.address, blockNumber);
+    } = useCartesiToken(account, staking?.target as string, blockNumber);
 
     const stakingPool = useStakingPoolQuery(pool as string);
 
@@ -138,19 +136,19 @@ const Pool = () => {
     const error = tokenError || stakingError;
 
     const updateTimers = () => {
-        if (maturingBalance.gt(0)) {
+        if (maturingBalance > 0n) {
             setMaturingCountdown(
                 maturingTimestamp > new Date()
                     ? maturingTimestamp.getTime() - new Date().getTime()
-                    : 0
+                    : 0,
             );
         }
 
-        if (releasingBalance.gt(0)) {
+        if (releasingBalance > 0n) {
             setReleasingCountdown(
                 releasingTimestamp > new Date()
                     ? releasingTimestamp.getTime() - new Date().getTime()
-                    : 0
+                    : 0,
             );
         }
     };
@@ -186,9 +184,9 @@ const Pool = () => {
     const doApprove = () => {
         if (stakeAmount > 0) {
             if (infiniteApproval) {
-                approve(staking.address, constants.MaxUint256);
+                approve(staking.target as string, MaxUint256);
             } else if (stakeAmount != toCTSI(allowance)) {
-                approve(staking.address, parseCTSI(stakeAmount));
+                approve(staking.target as string, parseCTSI(stakeAmount));
             }
         }
     };
@@ -213,34 +211,28 @@ const Pool = () => {
         withdraw(releasingBalance);
     };
 
-    const validate = (value: string): string => {
-        if (!value) return '0';
-        value = value.split('.')[0];
-        return value;
-    };
-
     const acceptDisclaimer = () => {
         setReadDisclaimer(true);
         localStorage.setItem('readDisclaimer', 'true');
     };
 
     const splitStakeAmount = () => {
-        let fromReleasing = BigNumber.from(0),
-            fromAllowance = BigNumber.from(0);
+        let fromReleasing = 0n,
+            fromAllowance = 0n;
         const stakeAmountCTSI = parseCTSI(stakeAmount);
 
-        if (releasingBalance.add(allowance).lt(stakeAmountCTSI)) {
+        if (releasingBalance + allowance < stakeAmountCTSI) {
             return null;
         }
 
-        if (releasingBalance.eq(0)) {
+        if (releasingBalance === 0n) {
             fromAllowance = stakeAmountCTSI;
         } else {
-            if (releasingBalance.gt(stakeAmountCTSI)) {
+            if (releasingBalance > stakeAmountCTSI) {
                 fromReleasing = stakeAmountCTSI;
             } else {
                 fromReleasing = releasingBalance;
-                fromAllowance = stakeAmountCTSI.sub(releasingBalance);
+                fromAllowance = stakeAmountCTSI - releasingBalance;
             }
         }
 
@@ -251,22 +243,22 @@ const Pool = () => {
     };
 
     const splitUnstakeAmount = () => {
-        let fromMaturing = BigNumber.from(0),
-            fromStaked = BigNumber.from(0);
+        let fromMaturing = 0n,
+            fromStaked = 0n;
         const unstakeAmountCTSI = parseCTSI(unstakeAmount);
 
-        if (maturingBalance.add(stakedBalance).lt(unstakeAmountCTSI)) {
+        if (maturingBalance + stakedBalance < unstakeAmountCTSI) {
             return null;
         }
 
-        if (maturingBalance.eq(0)) {
+        if (maturingBalance === 0n) {
             fromStaked = unstakeAmountCTSI;
         } else {
-            if (maturingBalance.gt(unstakeAmountCTSI)) {
+            if (maturingBalance > unstakeAmountCTSI) {
                 fromMaturing = unstakeAmountCTSI;
             } else {
                 fromMaturing = maturingBalance;
-                fromStaked = unstakeAmountCTSI.sub(maturingBalance);
+                fromStaked = unstakeAmountCTSI - maturingBalance;
             }
         }
 
@@ -278,9 +270,7 @@ const Pool = () => {
 
     const stakeSplit = splitStakeAmount();
     const unstakeSplit = splitUnstakeAmount();
-    const totalBalance = stakedBalance
-        .add(maturingBalance)
-        .add(releasingBalance);
+    const totalBalance = stakedBalance + maturingBalance + releasingBalance;
 
     return (
         <Layout className="staking">
@@ -351,15 +341,13 @@ const Pool = () => {
                 <div className="staking-total-balances-item">
                     <label className="body-text-1">Total Rewards</label>
                     <img
-                        data-tip={labels.totalRewardsPool}
+                        data-tooltip-id="pool-tooltip"
+                        data-tooltip-content={labels.totalRewardsPool}
                         src="/images/question.png"
                     />
                     <span className="info-text-md">
                         {stakingPool && stakingPool.user
-                            ? formatCTSI(
-                                  BigNumber.from(stakingPool.user.totalReward),
-                                  2
-                              )
+                            ? formatCTSI(stakingPool.user.totalReward, 2)
                             : 0}{' '}
                         <span className="small-text">CTSI</span>
                     </span>
@@ -368,7 +356,8 @@ const Pool = () => {
                 <div className="staking-total-balances-item">
                     <label className="body-text-1">In-contract Balance</label>
                     <img
-                        data-tip={labels.inContractBalancePool}
+                        data-tooltip-id="pool-tooltip"
+                        data-tooltip-content={labels.inContractBalancePool}
                         src="/images/question.png"
                     />
                     <span className="info-text-md">
@@ -382,7 +371,8 @@ const Pool = () => {
                 <div className="staking-total-balances-item">
                     <label className="body-text-1">Total Staked</label>
                     <img
-                        data-tip={labels.totalStakedPool}
+                        data-tooltip-id="pool-tooltip"
+                        data-tooltip-content={labels.totalStakedPool}
                         src="/images/question.png"
                     />
                     <span className="info-text-md">
@@ -390,7 +380,7 @@ const Pool = () => {
                             stakingPool && stakingPool.user
                                 ? stakingPool.user.stakedBalance
                                 : 0,
-                            2
+                            2,
                         )}{' '}
                         <span className="small-text">CTSI</span>
                     </span>
@@ -410,7 +400,7 @@ const Pool = () => {
                                         Maturing
                                     </span>
                                 </div>
-                                {maturingBalance.gt(0) &&
+                                {maturingBalance > 0n &&
                                     maturingCountdown > 0 && (
                                         <div className="staking-balances-item-timer">
                                             <span className="small-text">
@@ -449,23 +439,23 @@ const Pool = () => {
                                 <div className="mb-1">
                                     <img src="/images/releasing.png" />
                                     <span className="body-text-1 ml-3">
-                                        {releasingBalance.gt(0) &&
+                                        {releasingBalance > 0n &&
                                         releasingCountdown === 0
                                             ? 'Released'
                                             : 'Releasing'}
                                     </span>
                                 </div>
-                                {releasingBalance.gt(0) &&
+                                {releasingBalance > 0n &&
                                     releasingCountdown > 0 && (
                                         <div className="staking-balances-item-timer">
                                             <span className="small-text">
                                                 {displayTime(
-                                                    releasingCountdown
+                                                    releasingCountdown,
                                                 )}
                                             </span>
                                         </div>
                                     )}
-                                {releasingBalance.gt(0) &&
+                                {releasingBalance > 0n &&
                                     releasingCountdown === 0 && (
                                         <button
                                             type="button"
@@ -537,7 +527,7 @@ const Pool = () => {
                                             disabled={!account || waiting}
                                             onChange={(e) =>
                                                 setStakeAmount(
-                                                    parseFloat(e.target.value)
+                                                    parseFloat(e.target.value),
                                                 )
                                             }
                                         />
@@ -556,11 +546,11 @@ const Pool = () => {
                                 <div className="mt-2 mb-4 mx-2 px-2 border-left border-dark body-text-1">
                                     {stakeSplit ? (
                                         <>
-                                            {stakeSplit.releasing.gt(0) && (
+                                            {stakeSplit.releasing > 0n && (
                                                 <div className="d-flex flex-row align-items-center justify-content-between">
                                                     <span>
                                                         {formatCTSI(
-                                                            stakeSplit.releasing
+                                                            stakeSplit.releasing,
                                                         )}{' '}
                                                         <span className="small-text">
                                                             CTSI
@@ -571,11 +561,11 @@ const Pool = () => {
                                                     </span>
                                                 </div>
                                             )}
-                                            {stakeSplit.wallet.gt(0) && (
+                                            {stakeSplit.wallet > 0n && (
                                                 <div className="d-flex flex-row align-items-center justify-content-between">
                                                     <span>
                                                         {formatCTSI(
-                                                            stakeSplit.wallet
+                                                            stakeSplit.wallet,
                                                         )}{' '}
                                                         <span className="small-text">
                                                             CTSI
@@ -659,7 +649,7 @@ const Pool = () => {
                                             checked={infiniteApproval}
                                             onChange={(e) =>
                                                 setInfiniteApproval(
-                                                    e.target.checked
+                                                    e.target.checked,
                                                 )
                                             }
                                         />
@@ -686,7 +676,7 @@ const Pool = () => {
                                             disabled={!account || waiting}
                                             onChange={(e) =>
                                                 setUnstakeAmount(
-                                                    parseFloat(e.target.value)
+                                                    parseFloat(e.target.value),
                                                 )
                                             }
                                         />
@@ -703,11 +693,11 @@ const Pool = () => {
                                 <div className="mt-2 mb-4 mx-2 px-2 border-left border-dark body-text-1">
                                     {unstakeSplit ? (
                                         <>
-                                            {unstakeSplit.maturing.gt(0) && (
+                                            {unstakeSplit.maturing > 0n && (
                                                 <div className="d-flex flex-row align-items-center justify-content-between">
                                                     <span>
                                                         {formatCTSI(
-                                                            unstakeSplit.maturing
+                                                            unstakeSplit.maturing,
                                                         )}{' '}
                                                         <span className="small-text">
                                                             CTSI
@@ -716,11 +706,11 @@ const Pool = () => {
                                                     <span>From "maturing"</span>
                                                 </div>
                                             )}
-                                            {unstakeSplit.staked.gt(0) && (
+                                            {unstakeSplit.staked > 0n && (
                                                 <div className="d-flex flex-row align-items-center justify-content-between">
                                                     <span>
                                                         {formatCTSI(
-                                                            unstakeSplit.staked
+                                                            unstakeSplit.staked,
                                                         )}{' '}
                                                         <span className="small-text">
                                                             CTSI
@@ -754,7 +744,7 @@ const Pool = () => {
                     </div>
                 </div>
             </div>
-            <ReactTooltip />
+            <Tooltip id="pool-tooltip" />
         </Layout>
     );
 };

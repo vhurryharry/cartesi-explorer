@@ -81,7 +81,7 @@ const Footer = () => {
                             CTSI Token:
                             <Address
                                 type="address"
-                                id={token?.address}
+                                id={token?.target as string}
                                 rawLink={true}
                             />
                         </div>
@@ -90,7 +90,7 @@ const Footer = () => {
                             CTSI Faucet:
                             <Address
                                 type="address"
-                                id={faucet?.address}
+                                id={faucet?.target as string}
                                 rawLink={true}
                             />
                         </div>
@@ -99,7 +99,7 @@ const Footer = () => {
                             PoS:
                             <Address
                                 type="address"
-                                id={pos?.address}
+                                id={pos?.target as string}
                                 rawLink={true}
                             />
                         </div>
@@ -108,7 +108,7 @@ const Footer = () => {
                             Staking:
                             <Address
                                 type="address"
-                                id={staking?.address}
+                                id={staking?.target as string}
                                 rawLink={true}
                             />
                         </div>
@@ -117,7 +117,7 @@ const Footer = () => {
                             Worker Manager:
                             <Address
                                 type="address"
-                                id={workerManager?.address}
+                                id={workerManager?.target as string}
                                 rawLink={true}
                             />
                         </div>
@@ -126,7 +126,7 @@ const Footer = () => {
                             Pool Factory:
                             <Address
                                 type="address"
-                                id={poolFactory?.address}
+                                id={poolFactory?.target as string}
                                 rawLink={true}
                             />
                         </div>

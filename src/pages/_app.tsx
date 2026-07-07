@@ -19,9 +19,11 @@ import '../styles/styles.scss';
 import '@fortawesome/fontawesome-free/css/all.css';
 
 if (typeof window !== 'undefined') {
+    /* eslint-disable @typescript-eslint/no-require-imports */
     require('jquery');
     require('popper.js');
     require('bootstrap');
+    /* eslint-enable @typescript-eslint/no-require-imports */
 }
 
 const Web3Container = dynamic(() => import('../components/Web3Container'), {

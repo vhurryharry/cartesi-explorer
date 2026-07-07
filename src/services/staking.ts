@@ -11,30 +11,23 @@
 
 import { useState, useEffect } from 'react';
 import { useWeb3React } from '@web3-react/core';
-import { Web3Provider } from '@ethersproject/providers';
-import { BigNumber, BigNumberish, constants } from 'ethers';
+import { BigNumberish } from 'ethers';
 import { useBlockNumber } from './eth';
 import { useStakingContract } from './contracts';
 import { useTransaction } from './transaction';
 
 export const useStaking = () => {
-    const { account } = useWeb3React<Web3Provider>();
+    const { account } = useWeb3React();
     const staking = useStakingContract();
 
     const blockNumber = useBlockNumber();
     const { waiting, error, setError, setTransaction } = useTransaction();
 
-    const [stakedBalance, setStakedBalance] = useState<BigNumber>(
-        constants.Zero
-    );
+    const [stakedBalance, setStakedBalance] = useState<bigint>(0n);
     const [maturingTimestamp, setMaturingTimestamp] = useState<Date>(null);
     const [releasingTimestamp, setReleasingTimestamp] = useState<Date>(null);
-    const [maturingBalance, setMaturingBalance] = useState<BigNumber>(
-        constants.Zero
-    );
-    const [releasingBalance, setReleasingBalance] = useState<BigNumber>(
-        constants.Zero
-    );
+    const [maturingBalance, setMaturingBalance] = useState<bigint>(0n);
+    const [releasingBalance, setReleasingBalance] = useState<bigint>(0n);
 
     useEffect(() => {
         if (staking && account) {
@@ -42,12 +35,12 @@ export const useStaking = () => {
             staking
                 .getMaturingTimestamp(account)
                 .then((value) =>
-                    setMaturingTimestamp(new Date(value.toNumber() * 1000))
+                    setMaturingTimestamp(new Date(Number(value) * 1000)),
                 );
             staking
                 .getReleasingTimestamp(account)
                 .then((value) =>
-                    setReleasingTimestamp(new Date(value.toNumber() * 1000))
+                    setReleasingTimestamp(new Date(Number(value) * 1000)),
                 );
             staking.getMaturingBalance(account).then(setMaturingBalance);
             staking.getReleasingBalance(account).then(setReleasingBalance);

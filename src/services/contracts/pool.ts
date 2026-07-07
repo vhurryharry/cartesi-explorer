@@ -21,24 +21,17 @@ import {
     FlatRateCommission__factory,
     GasTaxCommission,
     GasTaxCommission__factory,
-} from '@cartesi/staking-pool';
+} from '../../contracts/types';
 
-import rinkeby from '@cartesi/staking-pool/export/abi/rinkeby.json';
-import ropsten from '@cartesi/staking-pool/export/abi/ropsten.json';
 import goerli from '@cartesi/staking-pool/export/abi/goerli.json';
-import kovan from '@cartesi/staking-pool/export/abi/kovan.json';
 
 import localhost from './localhost.json';
 
 import { ChainMap, useContract, useContractFromAddress } from '.';
-import { useWeb3React } from '@web3-react/core';
-import { Web3Provider } from '@ethersproject/providers';
+import { useEthersProvider } from '../provider';
 
 const abis: ChainMap = {
-    3: ropsten,
-    4: rinkeby,
     5: goerli,
-    42: kovan,
     31337: localhost,
 };
 
@@ -46,7 +39,7 @@ export const useStakingPoolFactoryContract = (): StakingPoolFactoryImpl => {
     return useContract(
         StakingPoolFactoryImpl__factory.connect,
         abis,
-        'StakingPoolFactoryImpl'
+        'StakingPoolFactoryImpl',
     );
 };
 
@@ -57,19 +50,19 @@ export const useStakingPoolContract = (address: string): StakingPoolImpl => {
 export const useFeeContract = (address: string): Fee => {
     const [fee, setFee] = useState<Fee>();
     const pool = useStakingPoolContract(address);
-    const { library } = useWeb3React<Web3Provider>();
+    const provider = useEthersProvider();
     useEffect(() => {
-        if (pool && library) {
+        if (pool && provider) {
             pool.fee().then((feeAddress) => {
-                setFee(Fee__factory.connect(feeAddress, library));
+                setFee(Fee__factory.connect(feeAddress, provider));
             });
         }
-    }, [address, pool, library]);
+    }, [address, pool, provider]);
     return fee;
 };
 
 export const useFlatRateCommissionContract = (
-    address: string
+    address: string,
 ): FlatRateCommission => {
     const [feeAddress, setFeeAddress] = useState<string>();
     const pool = useStakingPoolContract(address);
@@ -82,12 +75,12 @@ export const useFlatRateCommissionContract = (
 
     return useContractFromAddress(
         FlatRateCommission__factory.connect,
-        feeAddress
+        feeAddress,
     );
 };
 
 export const useGasTaxCommissionContract = (
-    address: string
+    address: string,
 ): GasTaxCommission => {
     const [feeAddress, setFeeAddress] = useState<string>();
     const pool = useStakingPoolContract(address);
@@ -100,6 +93,6 @@ export const useGasTaxCommissionContract = (
 
     return useContractFromAddress(
         GasTaxCommission__factory.connect,
-        feeAddress
+        feeAddress,
     );
 };

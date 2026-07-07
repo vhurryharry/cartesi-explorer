@@ -12,8 +12,8 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
 
-import { BigNumber, constants, FixedNumber } from 'ethers';
-import ReactTooltip from 'react-tooltip';
+import { FixedNumber, WeiPerEther } from 'ethers';
+import { Tooltip } from 'react-tooltip';
 
 import Layout from '../../components/Layout';
 
@@ -28,13 +28,9 @@ import labels from '../../utils/labels';
 import { formatCTSI } from '../../utils/token';
 import StakingDisclaimer from '../../components/StakingDisclaimer';
 
-interface Props {}
-
-const Calculator = (props: Props) => {
+const Calculator = () => {
     // user statke
-    const [stake, setStake] = useState<BigNumber>(
-        constants.One.mul(100000).mul(constants.WeiPerEther)
-    );
+    const [stake, setStake] = useState<bigint>(100000n * WeiPerEther);
 
     const summary = useSummary();
 
@@ -42,8 +38,7 @@ const Calculator = (props: Props) => {
     const [period, setPeriod] = useState<number>(100);
 
     // get market information (we need circulation supply)
-    const { marketInformation, error: marketInfomationError } =
-        useMarketInformation();
+    const { marketInformation } = useMarketInformation();
     const { parseCTSI, toCTSI } = useCartesiToken();
 
     // total staked simulation
@@ -64,7 +59,7 @@ const Calculator = (props: Props) => {
         blocks,
         stake,
         totalStaked,
-        period
+        period,
     );
 
     const blackBarPosition = loaded
@@ -107,8 +102,8 @@ const Calculator = (props: Props) => {
                                         parseCTSI(
                                             event.target.value
                                                 ? parseFloat(event.target.value)
-                                                : 1
-                                        )
+                                                : 1,
+                                        ),
                                     )
                                 }
                             />
@@ -132,7 +127,7 @@ const Calculator = (props: Props) => {
                                     setPeriod(
                                         event.target.value
                                             ? parseInt(event.target.value)
-                                            : 0
+                                            : 0,
                                     )
                                 }
                             />
@@ -158,7 +153,8 @@ const Calculator = (props: Props) => {
                         {toCTSI(activeStake).toLocaleString()}{' '}
                         <span className="small-text">CTSI </span>
                         <img
-                            data-tip={labels.effectiveTotalStake}
+                            data-tooltip-id="calculator-tooltip"
+                            data-tooltip-content={labels.effectiveTotalStake}
                             src="/images/question.png"
                         />
                     </div>
@@ -183,9 +179,9 @@ const Calculator = (props: Props) => {
                                             newTotalStaked >
                                                 marketInformation.circulatingSupply
                                                 ? marketInformation.circulatingSupply
-                                                : newTotalStaked
+                                                : newTotalStaked,
                                         );
-                                    } catch (e) {
+                                    } catch {
                                         setTotalStaked(1);
                                     }
                                 }}
@@ -247,7 +243,8 @@ const Calculator = (props: Props) => {
                                     <span className="body-text-2 mb-1">
                                         Projected Annual Earnings{' '}
                                         <img
-                                            data-tip={
+                                            data-tooltip-id="calculator-tooltip"
+                                            data-tooltip-content={
                                                 labels.projectedAnnualEarnings
                                             }
                                             src="/images/question.png"
@@ -255,7 +252,9 @@ const Calculator = (props: Props) => {
                                     </span>
                                     <span className="info-text-md">
                                         {apr
-                                            .mulUnsafe(FixedNumber.from(100))
+                                            .mulUnsafe(
+                                                FixedNumber.fromValue(100),
+                                            )
                                             .round(1)
                                             .toString() + '%'}
                                     </span>
@@ -267,7 +266,7 @@ const Calculator = (props: Props) => {
                             </div>
                         </div>
                     </div>
-                    <ReactTooltip />
+                    <Tooltip id="calculator-tooltip" />
                 </form>
             ) : (
                 <div />

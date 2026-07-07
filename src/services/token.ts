@@ -11,18 +11,17 @@
 
 import { useState, useEffect } from 'react';
 import { useCartesiTokenContract } from '../services/contracts';
-import { BigNumber, BigNumberish } from 'ethers';
-import { formatUnits, parseUnits } from '@ethersproject/units';
+import { BigNumberish, formatUnits, parseUnits } from 'ethers';
 import { useTransaction } from './transaction';
 
 export const useCartesiToken = (
     account: string = null,
     spender: string = null,
-    blockNumber = 0
+    blockNumber = 0,
 ) => {
     const token = useCartesiTokenContract();
-    const [balance, setBalance] = useState<BigNumber>(BigNumber.from(0));
-    const [allowance, setAllowance] = useState<BigNumber>(BigNumber.from(0));
+    const [balance, setBalance] = useState<bigint>(0n);
+    const [allowance, setAllowance] = useState<bigint>(0n);
 
     const { waiting, error, setError, setTransaction } = useTransaction();
 
@@ -47,7 +46,7 @@ export const useCartesiToken = (
         }
     };
 
-    const parseCTSI = (amount: number): BigNumber => {
+    const parseCTSI = (amount: number): bigint => {
         amount = amount * 1000;
         return parseUnits(amount.toString(), 15);
     };
@@ -56,8 +55,8 @@ export const useCartesiToken = (
         return parseInt(formatUnits(amount, 18));
     };
 
-    const toBigCTSI = (amount: BigNumberish): BigNumber => {
-        return BigNumber.from(toCTSI(amount));
+    const toBigCTSI = (amount: BigNumberish): bigint => {
+        return BigInt(toCTSI(amount));
     };
 
     return {

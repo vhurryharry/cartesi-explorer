@@ -11,42 +11,40 @@
 
 import { useState, useEffect } from 'react';
 import { useWeb3React } from '@web3-react/core';
-import { Web3Provider } from '@ethersproject/providers';
-import { BigNumber } from '@ethersproject/bignumber';
-import { isAddress } from '@ethersproject/address';
+import { isAddress } from 'ethers';
+import { useEthersProvider } from './provider';
 
-export const useBalance = (address: string, deps: any[] = []): BigNumber => {
-    const { library } = useWeb3React<Web3Provider>();
-    const [balance, setBalance] = useState<BigNumber>(undefined);
+export const useBalance = (address: string, deps: any[] = []): bigint => {
+    const provider = useEthersProvider();
+    const [balance, setBalance] = useState<bigint>(undefined);
     useEffect(() => {
-        if (library) {
+        if (provider) {
             if (isAddress(address)) {
-                library.getBalance(address).then(setBalance);
+                provider.getBalance(address).then(setBalance);
             } else {
                 setBalance(undefined);
             }
         }
-    }, [library, address, ...deps]);
+    }, [provider, address, ...deps]);
     return balance;
 };
 
 export const useBlockNumber = (): number => {
-    const { chainId, library } = useWeb3React<Web3Provider>();
+    const { chainId } = useWeb3React();
+    const provider = useEthersProvider();
     const [blockNumber, setBlockNumber] = useState<number>(0);
     useEffect(() => {
-        if (library) {
-            let stale = false;
-            library.getBlockNumber().then(setBlockNumber);
+        if (provider) {
+            provider.getBlockNumber().then(setBlockNumber);
             const updateBlockNumber = (blockNumber: number) => {
                 setBlockNumber(blockNumber);
             };
-            library.on('block', updateBlockNumber);
+            void provider.on('block', updateBlockNumber);
             return () => {
-                stale = true;
-                library.removeListener('block', updateBlockNumber);
+                void provider.off('block', updateBlockNumber);
                 setBlockNumber(undefined);
             };
         }
-    }, [library, chainId]);
+    }, [provider, chainId]);
     return blockNumber;
 };

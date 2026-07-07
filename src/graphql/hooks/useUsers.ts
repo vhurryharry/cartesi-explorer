@@ -18,7 +18,7 @@ export const USERS_PER_PAGE = 10;
 const useUsers = (
     pageNumber: number,
     id: string = undefined,
-    sort = 'timestamp'
+    sort = 'timestamp',
 ) => {
     const filter = id ? { id: id.toLowerCase() } : {};
     return useQuery<UsersData, UsersVars>(USERS, {

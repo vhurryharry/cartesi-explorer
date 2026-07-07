@@ -9,12 +9,15 @@
 // WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 // PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-import React from 'react';
-import { UnsupportedChainIdError, useWeb3React } from '@web3-react/core';
+import React, { ReactNode } from 'react';
+import { useWeb3React } from '@web3-react/core';
 import NavBar from './NavBar';
 import Footer from './Footer';
 import { useBlockNumber } from '../services/eth';
 import useMeta from '../graphql/hooks/useMeta';
+import { networks } from '../utils/networks';
+
+const supportedChainIds = Object.keys(networks).map((key) => parseInt(key));
 
 const threshold = 25;
 
@@ -39,9 +42,18 @@ const SyncStatus = () => {
     );
 };
 
-const LayoutComponent = ({ children, className = '' }) => {
-    const { error } = useWeb3React();
-    const isUnsupportedChainIdError = error instanceof UnsupportedChainIdError;
+const LayoutComponent = ({
+    children,
+    className = '',
+}: {
+    children: ReactNode;
+    className?: string;
+}) => {
+    const { chainId, isActive } = useWeb3React();
+    const isUnsupportedChainIdError =
+        isActive &&
+        chainId !== undefined &&
+        !supportedChainIds.includes(chainId);
 
     return (
         <div

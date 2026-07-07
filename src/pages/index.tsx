@@ -13,10 +13,9 @@ import React from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 
-import { BigNumber, constants, FixedNumber } from 'ethers';
+import { FixedNumber, WeiPerEther } from 'ethers';
 import { useWeb3React } from '@web3-react/core';
-import { Web3Provider } from '@ethersproject/providers';
-import ReactTooltip from 'react-tooltip';
+import { Tooltip } from 'react-tooltip';
 
 import Layout from '../components/Layout';
 import BlockCard from '../components/BlockCard';
@@ -40,7 +39,7 @@ interface HeaderProps {
 }
 const Header = (props: HeaderProps) => {
     const marketInformation = props.market;
-    const { account } = useWeb3React<Web3Provider>();
+    const { account } = useWeb3React();
     const blockNumber = useBlockNumber();
     const { balance } = useCartesiToken(account, null, blockNumber);
     const { stakedBalance } = useStaking();
@@ -64,7 +63,7 @@ const Header = (props: HeaderProps) => {
                             {`$${
                                 marketInformation.marketCap
                                     ? marketInformation.marketCap.toLocaleString(
-                                          'en'
+                                          'en',
                                       )
                                     : ''
                             }  `}
@@ -78,7 +77,7 @@ const Header = (props: HeaderProps) => {
                             {`${
                                 marketInformation.circulatingSupply
                                     ? marketInformation.circulatingSupply.toLocaleString(
-                                          'en'
+                                          'en',
                                       )
                                     : ''
                             }  `}
@@ -129,54 +128,44 @@ const Stats = (props: StatsProps) => {
         const { yearReturn } = getRewardRate(blocks, market.circulatingSupply);
 
         const participationRate = toCTSI(summary.totalStaked).divUnsafe(
-            FixedNumber.from(market.circulatingSupply)
+            FixedNumber.fromValue(market.circulatingSupply),
         );
 
         // build label
         participationRateLabel =
             participationRate
-                .mulUnsafe(FixedNumber.from(100))
+                .mulUnsafe(FixedNumber.fromValue(100))
                 .round(1)
                 .toString() + '%';
 
         aprLabel =
-            yearReturn.mulUnsafe(FixedNumber.from(100)).round(1).toString() +
-            '%';
+            yearReturn
+                .mulUnsafe(FixedNumber.fromValue(100))
+                .round(1)
+                .toString() + '%';
     }
 
-    const totalStaked = BigNumber.from(
-        summary && summary.totalStaked ? summary.totalStaked : 0
+    const totalStaked = BigInt(
+        summary && summary.totalStaked ? summary.totalStaked : 0,
     );
     let totalStakedLabel = '0';
 
-    if (
-        totalStaked.gte(
-            BigNumber.from(1e9).mul(BigNumber.from(constants.WeiPerEther))
-        )
-    ) {
+    if (totalStaked >= 1_000_000_000n * WeiPerEther) {
         totalStakedLabel =
             toCTSI(totalStaked)
-                .divUnsafe(FixedNumber.from(1e9))
+                .divUnsafe(FixedNumber.fromValue(1e9))
                 .round(2)
                 .toString() + 'G';
-    } else if (
-        totalStaked.gte(
-            BigNumber.from(1e6).mul(BigNumber.from(constants.WeiPerEther))
-        )
-    ) {
+    } else if (totalStaked >= 1_000_000n * WeiPerEther) {
         totalStakedLabel =
             toCTSI(totalStaked)
-                .divUnsafe(FixedNumber.from(1e6))
+                .divUnsafe(FixedNumber.fromValue(1e6))
                 .round(2)
                 .toString() + 'M';
-    } else if (
-        totalStaked.gte(
-            BigNumber.from(1e3).mul(BigNumber.from(constants.WeiPerEther))
-        )
-    ) {
+    } else if (totalStaked >= 1_000n * WeiPerEther) {
         totalStakedLabel =
             toCTSI(totalStaked)
-                .divUnsafe(FixedNumber.from(1e3))
+                .divUnsafe(FixedNumber.fromValue(1e3))
                 .round(2)
                 .toString() + 'K';
     } else {
@@ -196,7 +185,8 @@ const Stats = (props: StatsProps) => {
                     <div className="sub-title-1">
                         Total Staked (CTSI){' '}
                         <img
-                            data-tip={labels.totalStaked}
+                            data-tooltip-id="stats-tooltip"
+                            data-tooltip-content={labels.totalStaked}
                             src="/images/question.png"
                         />
                     </div>
@@ -206,7 +196,10 @@ const Stats = (props: StatsProps) => {
                     <div className="sub-title-1">
                         Projected Annual Earnings{' '}
                         <img
-                            data-tip={labels.projectedAnnualEarnings}
+                            data-tooltip-id="stats-tooltip"
+                            data-tooltip-content={
+                                labels.projectedAnnualEarnings
+                            }
                             src="/images/question.png"
                         />
                     </div>
@@ -216,14 +209,15 @@ const Stats = (props: StatsProps) => {
                     <div className="sub-title-1">
                         Participation Rate{' '}
                         <img
-                            data-tip={labels.participationRate}
+                            data-tooltip-id="stats-tooltip"
+                            data-tooltip-content={labels.participationRate}
                             src="/images/question.png"
                         />
                     </div>
                     <div className="info-text-bg">{participationRateLabel}</div>
                 </div>
             </div>
-            <ReactTooltip />
+            <Tooltip id="stats-tooltip" />
         </div>
     );
 };

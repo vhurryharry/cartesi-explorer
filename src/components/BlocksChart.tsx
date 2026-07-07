@@ -48,7 +48,7 @@ const BlocksChart = (props: BlocksChartProps) => {
     // group blocks per chain
     const blocksPerChain = _.groupBy(
         blocks,
-        (block) => `${block.chain.protocol.version}-${block.chain.number}`
+        (block) => `${block.chain.protocol.version}-${block.chain.number}`,
     );
 
     // unique list of protocols
@@ -110,7 +110,7 @@ const BlocksChart = (props: BlocksChartProps) => {
         return date.toUTC().toLocaleString(DateTime.DATETIME_SHORT);
     };
 
-    const tooltipFormatter = (value, name, props) => {
+    const tooltipFormatter = (value, name) => {
         if (name === 'Difficulty') {
             return value;
         } else if (name === 'Time') {

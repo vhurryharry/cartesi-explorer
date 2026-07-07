@@ -12,7 +12,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useWeb3React } from '@web3-react/core';
-import { Web3Provider } from '@ethersproject/providers';
+import { Tooltip } from 'react-tooltip';
 
 import useStakingPools, {
     POOLS_PER_PAGE,
@@ -20,7 +20,7 @@ import useStakingPools, {
 import { StakingPool, Summary } from '../graphql/models';
 import Address from '../components/Address';
 import { formatCTSI } from '../utils/token';
-import { ethers, FixedNumber } from 'ethers';
+import { FixedNumber, parseUnits } from 'ethers';
 import { useStakingPoolCommission } from '../services/pool';
 import labels from '../utils/labels';
 import { useStakingPoolFactory } from '../services/poolFactory';
@@ -38,16 +38,16 @@ type Sort =
 
 const PoolRow = (props: { pool: StakingPool }) => {
     const { pool } = props;
-    const { account } = useWeb3React<Web3Provider>();
+    const { account } = useWeb3React();
 
     // calculate accured commission
-    const totalReward = FixedNumber.from(pool.user.totalReward);
-    const totalCommission = FixedNumber.from(pool.totalCommission);
+    const totalReward = FixedNumber.fromString(pool.user.totalReward);
+    const totalCommission = FixedNumber.fromString(pool.totalCommission);
     const accuredCommissionLabel = totalReward.isZero()
         ? '-'
         : `${totalCommission
               .divUnsafe(totalReward)
-              .mulUnsafe(FixedNumber.from(100))
+              .mulUnsafe(FixedNumber.fromValue(100))
               .toUnsafeFloat()
               .toFixed(2)} %`;
 
@@ -60,11 +60,8 @@ const PoolRow = (props: { pool: StakingPool }) => {
     }
 
     // calculate commission for next block, by calling the fee contract
-    const reward = ethers.utils.parseUnits('2900', 18); // XXX this value should come from the RewardManager
-    const nextCommission = useStakingPoolCommission(pool.id, reward);
-    const nextCommissionLabel = nextCommission.value
-        ? `${(nextCommission.value * 100).toFixed(2)} %`
-        : '';
+    const reward = parseUnits('2900', 18); // XXX this value should come from the RewardManager
+    useStakingPoolCommission(pool.id, reward);
 
     // commission help tooptip
     let commissionTooltip: string = undefined;
@@ -86,7 +83,8 @@ const PoolRow = (props: { pool: StakingPool }) => {
                 {commissionLabel}{' '}
                 {commissionTooltip && (
                     <img
-                        data-tip={commissionTooltip}
+                        data-tooltip-id="pool-commission-tooltip"
+                        data-tooltip-content={commissionTooltip}
                         src="/images/question.png"
                     />
                 )}
@@ -122,6 +120,7 @@ const Pools = (props: PoolsProps) => {
 
     return (
         <div className="pools">
+            <Tooltip id="pool-commission-tooltip" />
             <div className="pools-title mt-5 mb-2">
                 {!factoryLoading && !paused && (
                     <div className="pools-title-create body-text-1">

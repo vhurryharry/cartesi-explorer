@@ -55,7 +55,7 @@ const BlockItem = (props: BlockItemProps) => {
                     <div className="sub-title-4 col-4 my-1">Producer</div>
                     <Address
                         className={`body-text-2 col-8 my-1 ${highlight(
-                            'producer'
+                            'producer',
                         )}`}
                         type="address"
                         id={block.producer.id}
@@ -64,7 +64,7 @@ const BlockItem = (props: BlockItemProps) => {
                     <div className="sub-title-4 col-4 my-1">Node</div>
                     <Address
                         className={`body-text-2 col-8 my-1 ${highlight(
-                            'node'
+                            'node',
                         )}`}
                         type="address"
                         id={block.node.id}
