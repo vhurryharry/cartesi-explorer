@@ -10,54 +10,39 @@
 // PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 import React, { useEffect, useState } from 'react';
-import { UnsupportedChainIdError, useWeb3React } from '@web3-react/core';
-import { Web3Provider } from '@ethersproject/providers';
+import { useWeb3React } from '@web3-react/core';
 import MetaMaskOnboarding from '@metamask/onboarding';
-import { InjectedConnector } from '@web3-react/injected-connector';
+import { metaMask } from '../services/connectors';
 import { IChainData, getChain } from '../services/chain';
 import { networks } from '../utils/networks';
 
+const supportedChainIds = Object.keys(networks).map((key) => parseInt(key));
+
 const SelectedChain = () => {
-    const {
-        chainId,
-        activate,
-        deactivate,
-        error,
-        active,
-    } = useWeb3React<Web3Provider>();
-    const isUnsupportedChainIdError = error instanceof UnsupportedChainIdError;
+    const { chainId, isActive } = useWeb3React();
+    const isUnsupportedChainId =
+        isActive &&
+        chainId !== undefined &&
+        !supportedChainIds.includes(chainId);
     const [chain, setChain] = useState<IChainData>(undefined);
     const hasMetaMask = MetaMaskOnboarding.isMetaMaskInstalled();
 
-    React.useEffect(() => {
-        if (window?.ethereum?.selectedAddress) {
-            connectNetwork();
-        }
+    // try to eagerly reconnect to a previously authorized wallet
+    useEffect(() => {
+        void metaMask.connectEagerly();
     }, []);
 
     // get chain name
     useEffect(() => {
-        if (chainId) {
+        if (chainId && !isUnsupportedChainId) {
             getChain(chainId).then(setChain);
-        } else if (error) {
+        } else {
             setChain(undefined);
         }
-    }, [chainId, error]);
+    }, [chainId, isUnsupportedChainId]);
 
     const connectNetwork = () => {
-        const supportedChainIds = Object.keys(networks).map((key) =>
-            parseInt(key)
-        );
-        const connector = new InjectedConnector({ supportedChainIds });
-        activate(connector);
-        if (window.ethereum) {
-            window.ethereum.on('accountsChanged', (accounts: string[]) => {
-                if (!accounts || accounts.length == 0) {
-                    deactivate();
-                    setChain(undefined);
-                }
-            });
-        }
+        void metaMask.activate();
     };
 
     return (
@@ -67,13 +52,13 @@ const SelectedChain = () => {
                     <span style={{ color: 'white' }}>{chain.name}</span>
                 </div>
             )}
-            {isUnsupportedChainIdError && (
+            {isUnsupportedChainId && (
                 <button type="button" className="btn btn-danger button-text">
                     <img src="/images/metamask.png" />
                     Unsupported Network
                 </button>
             )}
-            {!active && !isUnsupportedChainIdError && (
+            {!isActive && !isUnsupportedChainId && (
                 <button
                     type="button"
                     className="btn btn-primary button-text"

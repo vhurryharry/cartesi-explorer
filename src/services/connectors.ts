@@ -9,16 +9,14 @@
 // WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 // PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-import React, { ReactNode } from 'react';
-import { Web3ReactProvider } from '@web3-react/core';
-import { connectors } from '../services/connectors';
+import { initializeConnector, Web3ReactHooks } from '@web3-react/core';
+import { MetaMask } from '@web3-react/metamask';
+import { Connector } from '@web3-react/types';
 
-const Web3Container = ({ children }: { children: ReactNode }) => {
-    return (
-        <Web3ReactProvider connectors={connectors}>
-            {children}
-        </Web3ReactProvider>
-    );
-};
+export const [metaMask, metaMaskHooks] = initializeConnector<MetaMask>(
+    (actions) => new MetaMask({ actions }),
+);
 
-export default Web3Container;
+export const connectors: [Connector, Web3ReactHooks][] = [
+    [metaMask, metaMaskHooks],
+];
