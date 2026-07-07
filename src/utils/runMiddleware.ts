@@ -3,7 +3,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 const runMiddleware = (
     req: NextApiRequest,
     res: NextApiResponse,
-    fn: Function
+    fn: Function,
 ) => {
     return new Promise((resolve, reject) => {
         fn(req, res, (result) => {

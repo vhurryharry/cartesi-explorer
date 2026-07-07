@@ -12,14 +12,14 @@
 import { useQuery } from '@apollo/client';
 import { NODES } from '../queries/nodes';
 import { NodesData, NodesVars } from '../models';
-import { constants } from 'ethers';
+import { ZeroAddress } from 'ethers';
 
 export const NODES_PER_PAGE = 10;
 
 const useNodes = (
     pageNumber: number,
     id: string = undefined,
-    sort = 'timestamp'
+    sort = 'timestamp',
 ) => {
     const filter = id ? { id: id.toLowerCase() } : {};
     return useQuery<NodesData, NodesVars>(NODES, {
@@ -37,7 +37,7 @@ const useNodes = (
 
 export const useUserNodes = (owner: string) => {
     // if no owner, user address zero, so no nodes are returned
-    owner = owner || constants.AddressZero;
+    owner = owner || ZeroAddress;
 
     // convert to lowercase because backend is all lowercase
     owner = owner.toLowerCase();
